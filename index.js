@@ -1,9 +1,9 @@
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import express from 'express';
-import mongoose from 'mongoose';
-import postRoutes from './routes/posts.js';
-
+const bodyParser = require ('body-parser');
+const cors = require ('cors');
+const express = require ('express');
+const mongoose = require ('mongoose');
+const postRoutes = require ('./routes/posts.js');
+const userRouters = require ('./routes/UserRouter.js');
 
 const app = express();
 
@@ -12,6 +12,7 @@ app.use(bodyParser.urlencoded({ limit: '30mb', extended: true }))
 app.use(cors());
 
 app.use('/posts', postRoutes);
+app.use('/auth', userRouters);
 
 app.get('/',(req,res)=>res.send('welcome to social baddy'))
 

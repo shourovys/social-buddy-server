@@ -1,11 +1,11 @@
-import express from 'express';
-import mongoose from 'mongoose';
+const express = require ('express');
+const mongoose = require ('mongoose');
 
-import PostMessage from '../models/postMessage.js';
+const PostMessage = require ('../models/postMessage.js');
 
-const router = express.Router();
+const postControllers = {}
 
-export const getPosts = async (req, res) => { 
+postControllers.getPosts = async (req, res) => { 
     try {
         const postMessages = await PostMessage.find();
                 
@@ -15,7 +15,7 @@ export const getPosts = async (req, res) => {
     }
 }
 
-export const getPost = async (req, res) => { 
+postControllers.getPost = async (req, res) => { 
     const { id } = req.params;
 
     try {
@@ -27,10 +27,11 @@ export const getPost = async (req, res) => {
     }
 }
 
-export const createPost = async (req, res) => {
-    const { title, message, selectedFile, creator, tags } = req.body;
+postControllers.createPost = async (req, res) => {
+    const post = req.body;
+    const userId = String(req.userId)
 
-    const newPostMessage = new PostMessage({ title, message, selectedFile, creator, tags })
+    const newPostMessage = new PostMessage({ ...post, creator:userId, createdAt:new Date().toISOString()})
 
     try {
         await newPostMessage.save();
@@ -41,7 +42,7 @@ export const createPost = async (req, res) => {
     }
 }
 
-export const updatePost = async (req, res) => {
+postControllers.updatePost = async (req, res) => {
     const { id } = req.params;
     const { title, message, creator, selectedFile, tags } = req.body;
     
@@ -54,7 +55,7 @@ export const updatePost = async (req, res) => {
     res.json(updatedPost);
 }
 
-export const deletePost = async (req, res) => {
+postControllers.deletePost = async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No post with id: ${id}`);
@@ -64,17 +65,28 @@ export const deletePost = async (req, res) => {
     res.json({ message: "Post deleted successfully." });
 }
 
-export const likePost = async (req, res) => {
+postControllers.likePost = async (req, res) => {
     const { id } = req.params;
+    const userId = String(req.userId)
 
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No post with id: ${id}`);
     
+    if ( !req.userId) return res.status(404).send({message: 'unauthenticated'})
+
     const post = await PostMessage.findById(id);
 
-    const updatedPost = await PostMessage.findByIdAndUpdate(id, { likeCount: post.likeCount + 1 }, { new: true });
+    const index = post.likes.findIndex((id)=>id===userId)
+    if (index === -1){
+        //like post
+        post.likes.push(userId)
+    }else{
+        //dislike post\
+        post.likes=post.likes.filter(id=>id!==userId)
+    }
+
+    const updatedPost = await PostMessage.findByIdAndUpdate(id, post, { new: true });
     
     res.json(updatedPost);
 }
 
-
-export default router;
+module.exports = postControllers
